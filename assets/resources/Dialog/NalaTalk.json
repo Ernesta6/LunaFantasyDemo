@@ -30,7 +30,17 @@
         "id": "talk_3_quest",
         "condition": "nala_talk_count == 2",
         "content": [
-            { "role": "Nala", "content": "既然你来了三次，帮我找个蜡烛（Candle）吧！", "avatar": "Nala" }
+            { "role": "Nala", "content": "感谢你呐，Luna，你还是那么可靠！", "avatar": "Nala" },
+            { "role": "Nala", "content": "我想请你帮个忙好吗", "avatar": "Nala" },
+            { "role": "Nala", "content": "说起来这事怪我。。。", "avatar": "Nala" },
+            { "role": "Nala", "content": "今天我睡过头了，出门比较匆忙", "avatar": "Nala" },
+            { "role": "Nala", "content": "然后装蜡烛的袋子口子没封好！o(T~T)o", "avatar": "Nala" },
+            { "role": "Nala", "content": "结果就。。。蜡烛基本丢完了", "avatar": "Nala" },
+            { "role": "Luna", "content": "你还是老样子，哈哈", "avatar": "Luna" },
+            { "role": "Nala", "content": "所有喽，你帮帮忙，帮我把蜡烛找回来", "avatar": "Nala" },
+            { "role": "Nala", "content": "如果你能帮我找回全部的5根蜡烛，我就送你一把神器", "avatar": "Nala" },
+            { "role": "Luna", "content": "神器？", "avatar": "Luna" },
+            { "role": "Nala", "content": "是的，我觉得很适合你，加油呐~", "avatar": "Nala" }
         ],
         "afterAction": "accept_quest:1001" 
     },
@@ -39,7 +49,7 @@
         "id": "talk_waiting",
         "condition": "quest_1001_state == 1", 
         "content": [
-            { "role": "Nala", "content": "我的蜡烛找到了吗？就在那边草丛里。", "avatar": "Nala" }
+            { "role": "Nala", "content": "你还没帮我收集到所有的蜡烛，宝~", "avatar": "Nala" }
         ],
         "afterAction": ""
     }
