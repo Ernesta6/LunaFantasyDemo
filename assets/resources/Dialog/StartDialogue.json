@@ -1,0 +1,12 @@
+[
+    {
+        "id": "opening_sequence",
+        "condition": "game_start_intro == 0",
+        "content": [
+            { "role": "Luna", "content": "你好呀! 我叫Luna。", "avatar": "Luna" },
+            { "role": "Luna", "content": "你可以用上下左右控制我移动, F键与NPC进行对话, 战斗中需要简单点击按钮执行相应行为", "avatar": "Luna" },
+            { "role": "Luna", "content": "这只是一个Demo, 更多精彩内容敬请期待! ", "avatar": "Luna" }
+        ],
+        "afterAction": "set_flag:game_start_intro:1" 
+    }
+]

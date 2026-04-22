@@ -1,0 +1,46 @@
+[
+    {
+        "id": "talk_1",
+        "condition": "nala_talk_count == 0",
+        "content": [
+            { "role": "Nala", "content": "好久不见了，小猫咪(*w*)，Luna~", "avatar": "Nala" },
+            { "role": "Luna", "content": "好久不见，Nala，你还是那么有活力，哈哈", "avatar": "Luna" },
+            { "role": "Nala", "content": "还好吧~", "avatar": "Nala" },
+            { "role": "Nala", "content": "我的狗一直在叫，但是我这会忙不过来，你能帮我安抚一下他吗？", "avatar": "Nala" },
+            { "role": "Luna", "content": "啊？", "avatar": "Luna" },
+            { "role": "Nala", "content": "摸摸他就行，摸摸说哟西，真是个好孩子呐", "avatar": "Nala" },
+            { "role": "Nala", "content": "别看他叫的这么凶，其实他就是想引起别人的注意", "avatar": "Nala" },
+            { "role": "Luna", "content": "可是", "avatar": "Luna" },
+            { "role": "Luna", "content": "我是猫女郎啊", "avatar": "Luna" },
+            { "role": "Nala", "content": "安心啦，不会咬你哒，去吧去吧~", "avatar": "Nala" }
+        ],
+        "afterAction": "set_flag:nala_talk_count:1"
+    },
+    
+    {
+        "id": "talk_2",
+        "condition": "nala_talk_count == 1",
+        "content": [
+            { "role": "Nala", "content": "拜托了，快去帮我安抚那只狗吧~", "avatar": "Nala" }
+        ],
+        "afterAction": "set_flag:nala_talk_count:2"
+    },
+
+    {
+        "id": "talk_3_quest",
+        "condition": "nala_talk_count == 2",
+        "content": [
+            { "role": "Nala", "content": "既然你来了三次，帮我找个蜡烛（Candle）吧！", "avatar": "Nala" }
+        ],
+        "afterAction": "accept_quest:1001" 
+    },
+
+    {
+        "id": "talk_waiting",
+        "condition": "quest_1001_state == 1", 
+        "content": [
+            { "role": "Nala", "content": "我的蜡烛找到了吗？就在那边草丛里。", "avatar": "Nala" }
+        ],
+        "afterAction": ""
+    }
+]
