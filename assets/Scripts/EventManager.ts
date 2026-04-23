@@ -4,6 +4,7 @@ import { EventTarget } from 'cc';
 export const GameEvent = {
     ITEM_COLLECTED: "ITEM_COLLECTED", // 拾取物品
     QUEST_ACCEPTED: "QUEST_ACCEPTED", // 接取任务
+    QUEST_COMPLETE: "QUEST_COMPLETE",  // 【新增】完成任务
 };
 
 export class EventManager {

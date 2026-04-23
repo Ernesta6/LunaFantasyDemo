@@ -10,6 +10,8 @@ export class ItemSensor extends Component {
     @property({ tooltip: "对应任务配置里的物品ID" })
     public itemId: string = "Candle";
 
+    private hasCollected: boolean = false; // 【新增】防抖标记
+
     start() {
         const collider = this.getComponent(Collider2D);
         if (collider) {
@@ -21,6 +23,9 @@ export class ItemSensor extends Component {
     }
 
     onTriggerEnter(self: Collider2D, other: Collider2D, contact: IPhysics2DContact | null) {
+        // 【新增】防止重复计数
+        if (this.hasCollected) return;
+
         console.log(`[ItemSensor] 触发器检测: ${other.node.name}`);
         
         if (other.node.name === "Luna") {
@@ -38,6 +43,9 @@ export class ItemSensor extends Component {
                 // 2. 广播事件
                 EventManager.target.emit(GameEvent.ITEM_COLLECTED, this.itemId);
                 console.log(`[ItemSensor] 事件已广播`);
+                
+                // 【新增】设置已收集标记
+                this.hasCollected = true;
                 
                 // 3. 销毁物品
                 this.node.destroy();

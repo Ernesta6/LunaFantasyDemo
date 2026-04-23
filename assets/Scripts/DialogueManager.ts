@@ -19,7 +19,7 @@ interface DialogueBlock {
 
 @ccclass('DialogueManager')
 export class DialogueManager extends Component {
-    @property(PlayerMove) 
+    @property(PlayerMove)
     PlayerMove: PlayerMove = null!;
 
     @property({ group: "Debug", tooltip: "勾选后，每次启动游戏都会清空所有剧情进度" })
@@ -46,13 +46,13 @@ export class DialogueManager extends Component {
 
         if (this.resetProgressOnStart) {
             // 直接调用类方法，不要去访问 .SAVE_KEY
-            GameDataManager.clearAllData(); 
+            GameDataManager.clearAllData();
         }
 
         if (this.initialDialogueFile && this.initialDialogueFile !== "") {
             this.scheduleOnce(() => {
-            // 💡 检查开场状态位，比如 "game_start_intro"
-            // 如果值为 0（代表还没播过），则播放
+                // 💡 检查开场状态位，比如 "game_start_intro"
+                // 如果值为 0（代表还没播过），则播放
                 if (GameDataManager.getFlag("game_start_intro") === 0) {
                     this.loadDialogueData(this.initialDialogueFile);
                 }
@@ -75,7 +75,7 @@ export class DialogueManager extends Component {
     public loadDialogueData(fileName: string) {
         if (this.dialoguePanel.active) return;
 
-        
+
 
         resources.load(`Dialog/${fileName}`, JsonAsset, (err, asset) => {
             if (err) return error("加载失败", err);
@@ -95,7 +95,7 @@ export class DialogueManager extends Component {
 
     private checkCondition(conditionStr: string): boolean {
         if (!conditionStr || conditionStr === "") return true;
-        
+
         const parts = conditionStr.split(" "); // ["nala_state", "==", "0"]
         const key = parts[0];
         const op = parts[1];
@@ -143,29 +143,29 @@ export class DialogueManager extends Component {
             this.nextStep();
         }
     }
-   
+
 
     /**
      * 动态加载头像
      * @param fileName 图片名（不带后缀）
      */
-    loadAvatar(fileName: string) {  
-        if (!fileName) return;  
+    loadAvatar(fileName: string) {
+        if (!fileName) return;
 
         // 注意：这里是 Avatar (根据你修改后的文件夹名)，且没有后缀 s
-        const path = `Avatar/${fileName}/spriteFrame`; 
-    
+        const path = `Avatar/${fileName}/spriteFrame`;
+
         console.log("正在尝试加载路径:", path); // 打印出来辅助检查
 
-        resources.load(path, SpriteFrame, (err, spriteFrame) => {  
-            if (err) {  
-            // 如果报错，这里会打印具体的错误原因
-                console.warn(`${fileName} 头像加载失败，错误详情:`, err);  
-                return;  
-            }     
-            this.avatarSprite.spriteFrame = spriteFrame;  
+        resources.load(path, SpriteFrame, (err, spriteFrame) => {
+            if (err) {
+                // 如果报错，这里会打印具体的错误原因
+                console.warn(`${fileName} 头像加载失败，错误详情:`, err);
+                return;
+            }
+            this.avatarSprite.spriteFrame = spriteFrame;
             console.log("头像加载成功！");
-        });  
+        });
     }
 
     /**
@@ -175,7 +175,7 @@ export class DialogueManager extends Component {
         this.isTyping = true;
         this.currentFullText = text;
         this.contentLabel.string = ""; // 先清空
-        
+
         let charIndex = 0;
         this.unscheduleAllCallbacks(); // 清除之前的计时器，防止叠加
 
@@ -223,33 +223,38 @@ export class DialogueManager extends Component {
     }
 
     // 在 DialogueManager.ts 的 executeAction 中增加完成检测
+
     private executeAction(actionStr: string) {
         const parts = actionStr.split(":");
         const command = parts[0];
 
         if (command === "set_flag") {
             GameDataManager.setFlag(parts[1], parseInt(parts[2]));
-        } 
+        }
         else if (command === "accept_quest") {
             const questId = parts[1];
             GameDataManager.setFlag(`quest_${questId}_state`, 1); // 1 = 进行中
-            // 2. 【重要】同时递增对话计数，防止重复触发接任务对话
-            // 假设你要跳过 talk_3_quest，就把计数设为 3
-            GameDataManager.setFlag("nala_talk_count", 3); 
+            GameDataManager.setFlag("nala_talk_count", 3);
             console.log(`任务 ${questId} 已接取，对话计数已更新`);
             EventManager.target.emit(GameEvent.QUEST_ACCEPTED, questId);
         }
-        // 【新增】：检查任务是否可以交付
+        // 【核心】：检查任务是否可以交付
         else if (command === "check_quest_finish") {
-            const questId = parts[1]; // 例如 "candle_quest"
-            const targetId = parts[2]; // 例如 "Candle"
-            const countNeeded = parseInt(parts[3]); // 例如 3
+            const questId = parts[1];        // 例如 "candle_quest"
+            const targetId = parts[2];       // 例如 "Candle"
+            const countNeeded = parseInt(parts[3]); // 例如 5
 
             const currentItems = GameDataManager.getFlag(`count_${targetId}`);
-            if(currentItems >= countNeeded) {
-                // 满足条件，跳转到任务完成的 Flag
+            console.log(`检查任务条件: ${questId}, 需要 ${countNeeded} 个 ${targetId}, 当前有 ${currentItems} 个`);
+
+            if (currentItems >= countNeeded) {
+                // ✅ 满足条件，标记任务为已完成
                 GameDataManager.setFlag(`quest_${questId}_state`, 2); // 2 = 已达成
-                console.log("条件满足，可以交付任务了！");
+                GameDataManager.setFlag(`count_${targetId}`, currentItems - countNeeded); // 扣除已交付的物品
+                console.log("✅ 任务已完成！物品已交付");
+                EventManager.target.emit(GameEvent.QUEST_COMPLETE, questId); // 【新增事件】
+            } else {
+                console.log("物品不足，无法交付");
             }
         }
     }
