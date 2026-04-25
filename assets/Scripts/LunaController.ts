@@ -1,9 +1,12 @@
 import {
     _decorator, Component, Vec3, input, Input, KeyCode, EventKeyboard, Animation,
-    AnimationClip, Collider2D, Node, Contact2DType, IPhysics2DContact
+    AnimationClip, Collider2D, Node, Contact2DType, IPhysics2DContact, director, UIOpacity
 } from 'cc';
 import { NPCEntity, NPCInteractType } from "./NPCEntity";
 import { DialogueManager } from "./DialogueManager";
+import { BattleResultManager } from './BattleResultManager';
+import { GameDataManager } from './GameDataManager';
+
 const { ccclass, property } = _decorator;
 
 enum PlayerDir {
@@ -36,7 +39,6 @@ export class PlayerMove extends Component {
 
     @property(Animation)
     private playerAnim: Animation = null!;
-
 
     @property(DialogueManager)
     public dialogueManager: DialogueManager = null!; // 在编辑器里把对话管理器拖进来
@@ -88,7 +90,6 @@ export class PlayerMove extends Component {
     private _up: boolean = false;
     private _down: boolean = false;
     private _isShift: boolean = false;
-
     private currentDir: PlayerDir = PlayerDir.DOWN;
     private isRunning: boolean = false;
     private currentClipName: string = '';
@@ -104,16 +105,52 @@ export class PlayerMove extends Component {
     private playerCollider: Collider2D | null = null;
     private spriteNode: Node | null = null;
 
+    private battleCooldown: number = 0; // 战斗冷却计时器
+
+    @property({ group: "Debug", tooltip: "勾选后每次运行游戏都会清空存档（仅用于测试）" })
+    public debugResetSave: boolean = false;
+
+    private static _isFirstBoot: boolean = true; // 静态变量，进程生命周期内唯一
+
     protected onLoad() {
+        if (this.debugResetSave && PlayerMove._isFirstBoot) {
+            GameDataManager.clearAllData();
+            BattleResultManager.isReturningFromBattle = false;
+            PlayerMove._isFirstBoot = false;
+        }
+
         input.on(Input.EventType.KEY_DOWN, this.onKeyDown, this);
         input.on(Input.EventType.KEY_UP, this.onKeyUp, this);
         this.playerCollider = this.getComponent(Collider2D);
+
+        // 假设 Luna 节点的第一个子节点是渲染图片的节点，且挂了 UIOpacity
         this.spriteNode = this.node.children[0];
 
         if (this.playerCollider) {
             this.playerCollider.on(Contact2DType.BEGIN_CONTACT, this.onTriggerEnter, this);
             this.playerCollider.on(Contact2DType.END_CONTACT, this.onTriggerExit, this);
         }
+
+        // --- 战后回归逻辑合并 ---
+        if (BattleResultManager.isReturningFromBattle) {
+            this.node.setPosition(BattleResultManager.lastMapPosition);
+            this.battleCooldown = 3.0; // 冷却设为3秒
+
+            if (BattleResultManager.isMonsterDefeated) {
+                const m = this.node.parent.getChildByName(BattleResultManager.targetMonsterName);
+                if (m) m.destroy();
+                GameDataManager.addDefeatedMonster(BattleResultManager.targetMonsterName);
+            }
+
+            BattleResultManager.isReturningFromBattle = false;
+            BattleResultManager.isMonsterDefeated = false;
+        }
+
+        const defeatedList = GameDataManager.getDefeatedMonsters();
+        defeatedList.forEach(name => {
+            const m = this.node.parent.getChildByName(name);
+            if (m) m.destroy();
+        });
     }
 
     protected onDestroy() {
@@ -325,6 +362,15 @@ export class PlayerMove extends Component {
             this.isClimbing = true;
             console.log("进入藤蔓区域");
         }
+
+        if (other.node.name.includes("Monster")) {
+            if (this.battleCooldown > 0) return; // 冷却中不触发战斗
+            
+            BattleResultManager.lastMapPosition = this.node.position.clone();
+            BattleResultManager.targetMonsterName = other.node.name;
+            BattleResultManager.isReturningFromBattle = true;
+            this.startBattle();
+        }
     }
 
     private onTriggerExit(self: Collider2D, other: Collider2D) {
@@ -402,22 +448,52 @@ export class PlayerMove extends Component {
         console.log("状态恢复成功");
     }
 
+    private startBattle() {
+        console.log("碰到怪物！准备进入战斗...");
+
+        // 1. 锁定玩家操作，防止加载瞬间还能移动
+        this.canMove = false;
+        this.stopMovement();
+
+        // 3. 加载战斗场景
+        director.loadScene("Battle_Scene", () => {
+            console.log("战斗场景 Battle_Scene 加载完成");
+        });
+    }
+
+    private _handleCooldownEffect(dt: number) {
+        this.battleCooldown -= dt;
+        if (this.spriteNode) {
+            const op = this.spriteNode.getComponent(UIOpacity);
+            if (op) {
+                // 每 0.1 秒闪烁一次
+                op.opacity = (Math.floor(this.battleCooldown * 10) % 2 === 0) ? 100 : 255;
+                if (this.battleCooldown <= 0) op.opacity = 255;
+            }
+        }
+    }
+
+
     update(deltaTime: number) {
-        // --- 1. 修改锁定逻辑 ---
-        // 不要在这里 return，因为我们需要让下方的跳跃逻辑跑完
+        if (this.battleCooldown > 0) {
+            this._handleCooldownEffect(deltaTime);
+        }
+
         if (!this.canMove && !this.isInteracting) {
-            this._dir.set(0, 0, 0); // 仅强制清空移动方向
-            // 这里不 return
+            this._dir.set(0, 0, 0);
         }
 
         if (this.isInteracting) return;
 
-        // 只有在能移动时才处理方向（防止对话中通过按键改变朝向）
         if (this.canMove) {
             this.updateDirection();
+            let currentSpeed = this.isClimbing ? this.climbSpeed : (this._isShift ? this.runSpeed : this.walkSpeed);
+            const moveDelta = Vec3.multiplyScalar(new Vec3(), this._dir, currentSpeed * deltaTime);
+            const targetPos = new Vec3();
+            Vec3.add(targetPos, this.node.position, moveDelta);
+            this.node.setPosition(targetPos);
         }
 
-        // --- 2. 处理跳跃（这里必须保证能一直运行） ---
         if (this.isJumping) {
             this.jumpTimer += deltaTime;
             const progress = this.jumpTimer / this.jumpDuration;
@@ -428,21 +504,8 @@ export class PlayerMove extends Component {
             if (this.jumpTimer >= this.jumpDuration) {
                 this.isJumping = false;
                 if (this.spriteNode) this.spriteNode.setPosition(0, 0, 0);
-                if (this.playerCollider) {
-                    this.playerCollider.enabled = true; // 确保恢复碰撞
-                    console.log("跳跃结束，碰撞体恢复");
-                }
+                if (this.playerCollider) this.playerCollider.enabled = true;
             }
-        }
-
-        // --- 3. 移动物理逻辑（受 canMove 控制） ---
-        if (this.canMove) {
-            let currentSpeed = this.isClimbing ? this.climbSpeed : (this._isShift ? this.runSpeed : this.walkSpeed);
-            const moveDelta = Vec3.multiplyScalar(new Vec3(), this._dir, currentSpeed * deltaTime);
-            const targetPos = new Vec3();
-            Vec3.add(targetPos, this.node.position, moveDelta);
-            // ... 边界限制逻辑 ...
-            this.node.setPosition(targetPos);
         }
     }
 }

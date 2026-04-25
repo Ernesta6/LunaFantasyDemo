@@ -46,10 +46,30 @@
     },
 
     {
+        "id": "check_delivery",
+        "condition": "quest_1001_state == 1 && count_Candle >= 5",
+        "content": [
+            { "role": "Luna", "content": "Nala，我把 5 根蜡烛都找回来了！", "avatar": "Luna" },
+            { "role": "Nala", "content": "哇！不愧是 Luna，动作真快。(≧▽≦)", "avatar": "Nala" },
+            { "role": "Nala", "content": "把它们给我吧，我会履行诺言的。", "avatar": "Nala" },
+            { "role": "Nala", "content": "这是给你的奖励——【战神之锤】！", "avatar": "Nala" }
+        ],
+        "afterAction": "check_quest_finish:1001:Candle:5"
+    },
+
+    {
         "id": "talk_waiting",
         "condition": "quest_1001_state == 1", 
         "content": [
             { "role": "Nala", "content": "你还没帮我收集到所有的蜡烛，宝~", "avatar": "Nala" }
+        ],
+        "afterAction": ""
+    },
+    {
+        "id": "talk_finished",
+        "condition": "quest_1001_state == 2",
+        "content": [
+            { "role": "Nala", "content": "再次感谢你Luna, 快带着神器去发挥你的本领吧！", "avatar": "Nala" }
         ],
         "afterAction": ""
     }

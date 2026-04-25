@@ -3,18 +3,34 @@ import { sys } from 'cc';
 export class GameDataManager {
     private static readonly SAVE_KEY = "LUNA_STORY_FLAGS";
 
-    // 获取某个状态值，默认返回 0
-    static getFlag(key: string): number {
+    static getFlag(key: string, defaultValue: number = 0): number {
         const data = this.getAllData();
-        return data[key] !== undefined ? data[key] : 0;
+        return data[key] !== undefined ? data[key] : defaultValue;
     }
 
-    // 设置状态值（状态机核心）
     static setFlag(key: string, value: number) {
         const data = this.getAllData();
         data[key] = value;
         this.saveAllData(data);
-        console.log(`[存储] 状态更新: ${key} = ${value}`);
+    }
+
+    // 新增：专门处理击败的怪物列表
+    static addDefeatedMonster(name: string) {
+        const data = this.getAllData();
+        if (!data["DEFEATED_LIST"]) data["DEFEATED_LIST"] = [];
+        if (!data["DEFEATED_LIST"].includes(name)) {
+            data["DEFEATED_LIST"].push(name);
+        }
+        this.saveAllData(data);
+    }
+
+    static getDefeatedMonsters(): string[] {
+        return this.getAllData()["DEFEATED_LIST"] || [];
+    }
+
+    static clearAllData() {
+        sys.localStorage.removeItem(this.SAVE_KEY);
+        console.log("[测试模式] 游戏进度已重置。");
     }
 
     private static getAllData() {
@@ -24,11 +40,5 @@ export class GameDataManager {
 
     private static saveAllData(data: any) {
         sys.localStorage.setItem(this.SAVE_KEY, JSON.stringify(data));
-    }
-
-    static clearAllData() {
-        // 在类内部访问自己的 private 属性是允许的
-        sys.localStorage.removeItem(this.SAVE_KEY);
-        console.log("本地剧情存储已清空");
     }
 }

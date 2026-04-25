@@ -75,8 +75,6 @@ export class DialogueManager extends Component {
     public loadDialogueData(fileName: string) {
         if (this.dialoguePanel.active) return;
 
-
-
         resources.load(`Dialog/${fileName}`, JsonAsset, (err, asset) => {
             if (err) return error("加载失败", err);
 
@@ -93,17 +91,21 @@ export class DialogueManager extends Component {
         });
     }
 
+    // DialogueManager.ts 
     private checkCondition(conditionStr: string): boolean {
         if (!conditionStr || conditionStr === "") return true;
 
-        const parts = conditionStr.split(" "); // ["nala_state", "==", "0"]
+        const parts = conditionStr.split(" ");
         const key = parts[0];
         const op = parts[1];
         const val = parseInt(parts[2]);
 
         const currentVal = GameDataManager.getFlag(key);
+
+        // 新增支持
         if (op === "==") return currentVal === val;
         if (op === ">") return currentVal > val;
+        if (op === ">=") return currentVal >= val; // 【新增】支持大于等于
         return false;
     }
 
